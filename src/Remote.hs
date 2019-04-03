@@ -1,18 +1,68 @@
 module Remote where
 
 import qualified Data.ByteString.Char8 as BC
+import Text.Read
+import Data.Maybe
     
 data RemoteCommand = Init String |
-    Execute String |
     Void String |
-    Invalid 
+    InvalidCmd
     deriving (Read, Show)
 
-readCommand :: BC.ByteString -> RemoteCommand
-readCommand = read . BC.unpack
+data RemoteProcedure = Execute String |
+    InvalidProc
+    deriving (Read, Show)
 
-execRemoteCommand :: RemoteCommand -> IO ()
-execRemoteCommand (Init wasmFile) = putStrLn $ "Init " ++ wasmFile ++ " executed"
-execRemoteCommand (Execute function) = putStrLn $ "Execute " ++ function ++ " executed"
-execRemoteCommand (Void function) = putStrLn $ "Void " ++ function ++ " executed"
-execRemoteCommand Invalid = putStrLn "Invalid function received"
+takeRpcResult :: Either CommandResult ProcedureResult -> String
+takeRpcResult (Right maybeValue) = fromMaybe "Error" maybeValue
+takeRpcResult (Left maybeSuccess) | maybeSuccess == Nothing = "Error"
+                                  | otherwise = "Success"
+
+run :: BC.ByteString -> Either CommandResult ProcedureResult
+run bs = 
+    let
+        rpc = readRpc bs
+    in
+        case rpc of
+            (Left cmd) -> Left (execRemoteCommand cmd)
+            (Right proc) -> Right (execRemoteProcedure proc)
+
+readRpc :: BC.ByteString -> Either RemoteCommand RemoteProcedure
+readRpc bs = 
+    let
+        cmd = readCommand bs
+        proc = readProcedure bs
+    in
+        case (cmd, proc) of
+            (_, InvalidProc) -> Left cmd
+            (InvalidCmd, _) -> Right proc
+
+readCommand :: BC.ByteString -> RemoteCommand
+readCommand bs = 
+    let
+        maybeCommand = readMaybe $ BC.unpack bs
+    in
+        case maybeCommand of
+            (Just cmd) -> cmd
+            Nothing -> InvalidCmd
+
+readProcedure :: BC.ByteString -> RemoteProcedure
+readProcedure bs = 
+    let
+        maybeProcedure = readMaybe $ BC.unpack bs
+    in
+        case maybeProcedure of
+            (Just proc) -> proc
+            Nothing -> InvalidProc
+
+type CommandResult = Maybe ()
+type ProcedureResult = Maybe String
+
+execRemoteCommand :: RemoteCommand -> CommandResult
+execRemoteCommand (Init wasmFile) = Just ()
+execRemoteCommand (Void function) = Just ()
+execRemoteCommand InvalidCmd = Nothing
+
+execRemoteProcedure :: RemoteProcedure -> ProcedureResult
+execRemoteProcedure (Execute function) = Just "1 i32"
+execRemoteProcedure InvalidProc = Nothing
