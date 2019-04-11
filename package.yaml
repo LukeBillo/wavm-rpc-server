@@ -1,14 +1,13 @@
 name:                wavm-rpc-server
 version:             0.1.0.0
-github:              "githubuser/wavm-rpc-server"
+github:              "LukeBillo/wavm-rpc-server"
 license:             BSD3
-author:              "Author name here"
+author:              "Luke Billington"
 maintainer:          "example@example.com"
-copyright:           "2019 Author name here"
+copyright:           "2019 Luke Billington"
 
 extra-source-files:
 - README.md
-- ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -26,12 +25,17 @@ dependencies:
 
 library:
   source-dirs: src
+  extra-libraries:
+    - stdc++
+    - WAVM
+    - wavm_runtime
 
 executables:
   wavm-rpc-server-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
+    - -Wall
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N

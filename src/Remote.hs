@@ -1,8 +1,10 @@
 module Remote where
 
+
 import qualified Data.ByteString.Char8 as BC
 import Text.Read
 import Data.Maybe
+import WavmFFI
     
 data RemoteCommand = Init String |
     Void String |
@@ -12,30 +14,6 @@ data RemoteCommand = Init String |
 data RemoteProcedure = Execute String |
     InvalidProc
     deriving (Read, Show)
-
-takeRpcResult :: Either CommandResult ProcedureResult -> String
-takeRpcResult (Right maybeValue) = fromMaybe "Error" maybeValue
-takeRpcResult (Left maybeSuccess) | maybeSuccess == Nothing = "Error"
-                                  | otherwise = "Success"
-
-run :: BC.ByteString -> Either CommandResult ProcedureResult
-run bs = 
-    let
-        rpc = readRpc bs
-    in
-        case rpc of
-            (Left cmd) -> Left (execRemoteCommand cmd)
-            (Right proc) -> Right (execRemoteProcedure proc)
-
-readRpc :: BC.ByteString -> Either RemoteCommand RemoteProcedure
-readRpc bs = 
-    let
-        cmd = readCommand bs
-        proc = readProcedure bs
-    in
-        case (cmd, proc) of
-            (_, InvalidProc) -> Left cmd
-            (InvalidCmd, _) -> Right proc
 
 readCommand :: BC.ByteString -> RemoteCommand
 readCommand bs = 
@@ -58,11 +36,16 @@ readProcedure bs =
 type CommandResult = Maybe ()
 type ProcedureResult = Maybe String
 
-execRemoteCommand :: RemoteCommand -> CommandResult
-execRemoteCommand (Init wasmFile) = Just ()
-execRemoteCommand (Void function) = Just ()
-execRemoteCommand InvalidCmd = Nothing
+execRemoteCommand :: RemoteCommand -> IO CommandResult
+execRemoteCommand (Init wasmFile) = do
+                                        r <- initialiseWavm wasmFile False
+                                        case r of
+                                            0 -> pure $ Just ()
+                                            _ -> pure $ Nothing
+
+execRemoteCommand (Void function) = pure $ Just ()
+execRemoteCommand InvalidCmd = pure Nothing
 
 execRemoteProcedure :: RemoteProcedure -> ProcedureResult
-execRemoteProcedure (Execute function) = Just "1 i32"
+execRemoteProcedure (Execute function) = Just "i32 1"
 execRemoteProcedure InvalidProc = Nothing
