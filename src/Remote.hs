@@ -6,12 +6,12 @@ import Text.Read
 import Data.Maybe
 import WavmFFI
     
-data RemoteCommand = Init String |
-    Void String |
+data RemoteCommand = Void String |
     InvalidCmd
     deriving (Read, Show)
 
-data RemoteProcedure = Execute String |
+data RemoteProcedure = Init String Bool |
+    Execute String |
     InvalidProc
     deriving (Read, Show)
 
@@ -37,15 +37,21 @@ type CommandResult = Maybe ()
 type ProcedureResult = Maybe String
 
 execRemoteCommand :: RemoteCommand -> IO CommandResult
-execRemoteCommand (Init wasmFile) = do
-                                        r <- initialiseWavm wasmFile False
-                                        case r of
-                                            0 -> pure $ Just ()
-                                            _ -> pure $ Nothing
-
 execRemoteCommand (Void function) = pure $ Just ()
 execRemoteCommand InvalidCmd = pure Nothing
 
-execRemoteProcedure :: RemoteProcedure -> ProcedureResult
-execRemoteProcedure (Execute function) = Just "i32 1"
-execRemoteProcedure InvalidProc = Nothing
+execRemoteProcedure :: RemoteProcedure -> IO ProcedureResult
+execRemoteProcedure (Init wasmFile isPrecompiled) = do
+                                                        putStrLn wasmFile
+                                                        putStrLn $ show isPrecompiled
+                                                        r <- initialiseWavm wasmFile isPrecompiled
+                                                        case r of
+                                                            True -> pure $ Just "str Initialised"
+                                                            False -> pure Nothing
+
+execRemoteProcedure (Execute function) = do
+                                            putStrLn $ "Executing " ++ function
+                                            r <- execute function
+                                            pure $ Just r
+
+execRemoteProcedure InvalidProc = pure Nothing

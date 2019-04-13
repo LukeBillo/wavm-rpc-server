@@ -29,10 +29,10 @@ receiveSync = do
     forever $ do
         buffer <- receive syncHandler
         liftIO $ BC.putStrLn buffer
-        let result = execRemoteProcedure $ readProcedure buffer
+        result <- liftIO $ execRemoteProcedure $ readProcedure buffer
         case result of
             Nothing -> liftIO $ putStrLn "Sync Handler: Error"
-            _ -> liftIO $ putStrLn "Sync Handler: Success"
+            _ ->  liftIO $ putStrLn "Sync Handler: Success"
         send syncHandler [] $ BC.pack (fromMaybe "Error" result)
 
 main :: IO ()
