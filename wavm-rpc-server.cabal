@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e54e787c0a1f0d5b50f23bb4dae25189e9d908918b0072617b31d039bbdff8e0
+-- hash: f0fbd07fad1ddce2fbdc8e0cbc1e53b044dcd05e5382c724330e0df424fc3bf2
 
 name:           wavm-rpc-server
 version:        0.1.0.0
@@ -39,6 +39,7 @@ library
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , transformers
     , zeromq4-haskell
   default-language: Haskell2010
 
@@ -52,6 +53,7 @@ executable wavm-rpc-server-exe
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , transformers
     , wavm-rpc-server
     , zeromq4-haskell
   default-language: Haskell2010
@@ -67,6 +69,7 @@ test-suite wavm-rpc-server-test
   build-depends:
       base >=4.7 && <5
     , bytestring
+    , transformers
     , wavm-rpc-server
     , zeromq4-haskell
   default-language: Haskell2010

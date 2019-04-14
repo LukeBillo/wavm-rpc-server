@@ -36,22 +36,22 @@ readProcedure bs =
 type CommandResult = Maybe ()
 type ProcedureResult = Maybe String
 
-execRemoteCommand :: RemoteCommand -> IO CommandResult
-execRemoteCommand (Void function) = pure $ Just ()
-execRemoteCommand InvalidCmd = pure Nothing
+execRemoteCommand :: GlobalWavmRuntime -> RemoteCommand -> IO CommandResult
+execRemoteCommand gwr (Void function) = pure $ Just ()
+execRemoteCommand gwr InvalidCmd = pure Nothing
 
-execRemoteProcedure :: RemoteProcedure -> IO ProcedureResult
-execRemoteProcedure (Init wasmFile isPrecompiled) = do
+execRemoteProcedure :: GlobalWavmRuntime -> RemoteProcedure -> IO ProcedureResult
+execRemoteProcedure gwr (Init wasmFile isPrecompiled) = do
                                                         putStrLn wasmFile
                                                         putStrLn $ show isPrecompiled
-                                                        r <- initialiseWavm wasmFile isPrecompiled
+                                                        r <- initialiseWavm gwr wasmFile isPrecompiled
                                                         case r of
                                                             True -> pure $ Just "str Initialised"
                                                             False -> pure Nothing
 
-execRemoteProcedure (Execute function) = do
+execRemoteProcedure gwr (Execute function) = do
                                             putStrLn $ "Executing " ++ function
-                                            r <- execute function
+                                            r <- execute gwr function
                                             pure $ Just r
 
-execRemoteProcedure InvalidProc = pure Nothing
+execRemoteProcedure gwr InvalidProc = pure Nothing

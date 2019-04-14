@@ -8,10 +8,14 @@ import Foreign.C.String
 import Foreign.Marshal.Utils
 import Foreign.Ptr
 import Foreign.Storable
+import Control.Concurrent.MVar
+import Control.Monad.Trans.State
 
 -- Foreign imports
-foreign import ccall safe "runtime.h initialise" c_initialiseWavm :: CString -> CBool -> IO CBool
-foreign import ccall safe "runtime.h execute" c_execute :: CString -> IO CString
+type WavmRuntimePtr = Ptr WavmRuntime
+foreign import ccall unsafe "runtime.h newRuntime" c_newWavmRuntime :: IO WavmRuntimePtr
+foreign import ccall unsafe "runtime.h initialise" c_initialiseWavm :: WavmRuntimePtr -> CString -> CBool -> IO CBool
+foreign import ccall unsafe "runtime.h execute" c_execute :: WavmRuntimePtr -> CString -> IO CString
 
 toCBool :: Bool -> CBool
 toCBool = fromBool
@@ -19,17 +23,24 @@ toCBool = fromBool
 fromCBool :: CBool -> Bool
 fromCBool = toBool
 
+data WavmRuntime = WavmRuntime
+type GlobalWavmRuntime = WavmRuntimePtr
+
+createNewWavmRuntime :: IO GlobalWavmRuntime
+createNewWavmRuntime = c_newWavmRuntime
+
+
 -- Haskell Wrappers
-initialiseWavm :: String -> Bool -> IO Bool
-initialiseWavm file isPrecompiled = do
+initialiseWavm :: GlobalWavmRuntime -> String -> Bool -> IO Bool
+initialiseWavm rt file isPrecompiled = do
     csFile <- newCString file
-    isSuccessful <- c_initialiseWavm csFile (toCBool isPrecompiled)
+    isSuccessful <- c_initialiseWavm rt csFile (toCBool isPrecompiled)
     pure $ fromCBool isSuccessful
 
-execute :: String -> IO String
-execute func = do
+execute :: GlobalWavmRuntime -> String -> IO String
+execute rt func = do
     cStringFunc <- newCString func
-    result <- c_execute cStringFunc
+    result <- c_execute rt cStringFunc
     s <- peekCString result
     putStrLn s
     pure s
