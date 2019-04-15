@@ -11,6 +11,15 @@ import WavmFFI
 
 import qualified Data.ByteString.Char8 as BC
 
+runBundledCommands :: GlobalWavmRuntime -> Commands -> IO ()
+runBundledCommands _ [] = pure ()
+runBundledCommands gwr (c:cs) = do
+    result <- execRemoteCommand gwr c
+    case result of
+        Nothing -> liftIO $ putStrLn "Bundled Async Handler: Error"
+        _ -> liftIO $ putStrLn "Bundled Async Handler: Success"
+    runBundledCommands gwr cs
+
 receiveAsync :: GlobalWavmRuntime -> ZMQ z ()
 receiveAsync gwr = do
     asyncHandler <- socket Pull
@@ -30,15 +39,23 @@ receiveSync gwr = do
     forever $ do
         buffer <- receive syncHandler
         liftIO $ BC.putStrLn buffer
-        result <- liftIO $ execRemoteProcedure gwr $ readProcedure buffer
-        case result of
-            Nothing -> liftIO $ putStrLn "Sync Handler: Error"
-            _ ->  liftIO $ putStrLn "Sync Handler: Success"
-        send syncHandler [] $ BC.pack (fromMaybe "Error" result)
+        let bundle = splitBundle $ readBundle buffer
+        case bundle of
+            Nothing -> do
+                liftIO $ putStrLn "Sync Handler: Broken bundle received"
+                send syncHandler [] $ BC.pack "Error"
+                
+            Just (bundleParts) -> do
+                _ <- async $ liftIO $ runBundledCommands gwr (fst bundleParts)
+                result <- liftIO $ execRemoteProcedure gwr (snd bundleParts)
+                case result of
+                    Nothing -> liftIO $ putStrLn "Sync Handler: Error"
+                    _ ->  liftIO $ putStrLn "Sync Handler: Success"
+                send syncHandler [] $ BC.pack (fromMaybe "Error" result)
 
 main :: IO ()
 main = do
     runtime <- createNewWavmRuntime
     runZMQ $ do
-        async $ receiveAsync runtime
+        _ <- async $ receiveAsync runtime
         receiveSync runtime
