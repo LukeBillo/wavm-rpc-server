@@ -39,9 +39,6 @@ receiveSync gwr = do
 main :: IO ()
 main = do
     runtime <- createNewWavmRuntime
-    isSuccessful <- initialiseWavm runtime "/home/luke/Documents/c++-wasm-files/wasm/basic-functions-2.wasm" False
-    r <- execute runtime "_getMyNumber"
-    putStrLn r
     runZMQ $ do
-        --async $ receiveAsync runtime
+        async $ receiveAsync runtime
         receiveSync runtime

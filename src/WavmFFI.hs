@@ -42,5 +42,4 @@ execute rt func = do
     cStringFunc <- newCString func
     result <- c_execute rt cStringFunc
     s <- peekCString result
-    putStrLn s
     pure s

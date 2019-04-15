@@ -37,20 +37,20 @@ type CommandResult = Maybe ()
 type ProcedureResult = Maybe String
 
 execRemoteCommand :: GlobalWavmRuntime -> RemoteCommand -> IO CommandResult
-execRemoteCommand gwr (Void function) = pure $ Just ()
+execRemoteCommand gwr (Void function) = do
+                                        _ <- execute gwr function
+                                        pure $ Just ()
+                                        
 execRemoteCommand gwr InvalidCmd = pure Nothing
 
 execRemoteProcedure :: GlobalWavmRuntime -> RemoteProcedure -> IO ProcedureResult
 execRemoteProcedure gwr (Init wasmFile isPrecompiled) = do
-                                                        putStrLn wasmFile
-                                                        putStrLn $ show isPrecompiled
                                                         r <- initialiseWavm gwr wasmFile isPrecompiled
                                                         case r of
                                                             True -> pure $ Just "str Initialised"
                                                             False -> pure Nothing
 
 execRemoteProcedure gwr (Execute function) = do
-                                            putStrLn $ "Executing " ++ function
                                             r <- execute gwr function
                                             pure $ Just r
 
