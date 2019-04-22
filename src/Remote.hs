@@ -6,7 +6,7 @@ import Text.Read
 import Data.Maybe
 import WavmFFI
     
-data RemoteCommand = ExecuteAsync String |
+data RemoteCommand = Void String |
     InvalidCmd
     deriving (Read, Show)
 
@@ -21,14 +21,14 @@ data Bundle = Bundle [RemoteCommand] RemoteProcedure |
 
 type Commands = [RemoteCommand]
 
-readCommand :: BC.ByteString -> RemoteCommand
-readCommand bs = 
+readCommands :: BC.ByteString -> Commands
+readCommands bs = 
     let
         maybeCommand = readMaybe $ BC.unpack bs
     in
         case maybeCommand of
             (Just cmd) -> cmd
-            Nothing -> InvalidCmd
+            Nothing -> [InvalidCmd]
 
 splitBundle :: Bundle -> Maybe (Commands, RemoteProcedure)
 splitBundle (Bundle cmds p) = Just (cmds, p)
@@ -57,7 +57,7 @@ type CommandResult = Maybe ()
 type ProcedureResult = Maybe String
 
 execRemoteCommand :: GlobalWavmRuntime -> RemoteCommand -> IO CommandResult
-execRemoteCommand gwr (ExecuteAsync function) = do
+execRemoteCommand gwr (Void function) = do
                                         _ <- execute gwr function
                                         pure $ Just ()
 

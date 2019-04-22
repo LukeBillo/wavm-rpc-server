@@ -8,6 +8,7 @@ import System.ZMQ4.Monadic
 import Remote
 import Data.Maybe
 import WavmFFI
+import Utility
 
 import qualified Data.ByteString.Char8 as BC
 
@@ -16,8 +17,8 @@ runBundledCommands _ [] = pure ()
 runBundledCommands gwr (c:cs) = do
     result <- execRemoteCommand gwr c
     case result of
-        Nothing -> liftIO $ putStrLn "Bundled Async Handler: Error"
-        _ -> liftIO $ putStrLn "Bundled Async Handler: Success"
+        Nothing -> liftIO $ putStrLn "Command Handler: Error"
+        _ -> liftIO $ putStrLn "Command Handler: Success"
     runBundledCommands gwr cs
 
 receiveAsync :: GlobalWavmRuntime -> ZMQ z ()
@@ -27,10 +28,7 @@ receiveAsync gwr = do
     forever $ do
         buffer <- receive asyncHandler
         liftIO $ BC.putStrLn buffer
-        result <- liftIO $ execRemoteCommand gwr $ readCommand buffer
-        case result of
-            Nothing -> liftIO $ putStrLn "Async Handler: Error"
-            _ -> liftIO $ putStrLn "Async Handler: Success"
+        liftIO $ runBundledCommands gwr $ readCommands buffer
 
 receiveSync :: GlobalWavmRuntime -> ZMQ z ()
 receiveSync gwr = do
@@ -42,16 +40,16 @@ receiveSync gwr = do
         let bundle = splitBundle $ readBundle buffer
         case bundle of
             Nothing -> do
-                liftIO $ putStrLn "Sync Handler: Broken bundle received"
+                liftIO $ putStrLn "Procedure Handler: Broken bundle received"
                 send syncHandler [] $ BC.pack "Error"
                 
             Just (bundleParts) -> do
-                _ <- async $ liftIO $ runBundledCommands gwr (fst bundleParts)
+                liftIO $ runBundledCommands gwr (fst bundleParts)
                 result <- liftIO $ execRemoteProcedure gwr (snd bundleParts)
                 case result of
-                    Nothing -> liftIO $ putStrLn "Sync Handler: Error"
-                    _ ->  liftIO $ putStrLn "Sync Handler: Success"
-                send syncHandler [] $ BC.pack (fromMaybe "Error" result)
+                    Nothing -> liftIO $ putStrLn "Procedure Handler: Error"
+                    _ ->  liftIO $ putStrLn "Procedure Handler: Success"
+                send syncHandler [] $ BC.pack $ cleanWavmResult (fromMaybe "Error" result)
 
 main :: IO ()
 main = do

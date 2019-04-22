@@ -23,6 +23,7 @@ dependencies:
 - transformers
 - zeromq4-haskell
 - bytestring
+- MissingH
 
 library:
   source-dirs: src

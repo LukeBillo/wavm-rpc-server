@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f0fbd07fad1ddce2fbdc8e0cbc1e53b044dcd05e5382c724330e0df424fc3bf2
+-- hash: a1c07469f3b727e8ea96ae271e58d0d40f9f8905dd2cd062516750ef98c88968
 
 name:           wavm-rpc-server
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 library
   exposed-modules:
       Remote
+      Utility
       WavmFFI
   other-modules:
       Paths_wavm_rpc_server
@@ -37,7 +38,8 @@ library
       WAVM
       wavm_runtime
   build-depends:
-      base >=4.7 && <5
+      MissingH
+    , base >=4.7 && <5
     , bytestring
     , transformers
     , zeromq4-haskell
@@ -51,7 +53,8 @@ executable wavm-rpc-server-exe
       app
   ghc-options: -Wall -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      MissingH
+    , base >=4.7 && <5
     , bytestring
     , transformers
     , wavm-rpc-server
@@ -67,7 +70,8 @@ test-suite wavm-rpc-server-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      MissingH
+    , base >=4.7 && <5
     , bytestring
     , transformers
     , wavm-rpc-server
